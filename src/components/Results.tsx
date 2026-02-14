@@ -1,6 +1,57 @@
 import { useMemo, useState } from "react";
 import type { Combination } from "../solver.ts";
-import { formatCombination, shakeBreakdown } from "../solver.ts";
+import {
+  combinationsEqual,
+  formatCombination,
+  shakeBreakdown,
+} from "../solver.ts";
+
+function ShakeBreakdownTable({
+  breakdown,
+}: {
+  breakdown: Combination[][];
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-3 mb-2">
+        <span className="text-xs font-medium text-gray-500 w-16 shrink-0 text-right">
+          # shakes
+        </span>
+        <span className="text-xs font-medium text-gray-500">
+          Remaining combinations
+        </span>
+      </div>
+      <div className="space-y-3">
+        {[0, 1, 2, 3, 4].map((shakes) => {
+          const combos = breakdown[shakes]!;
+          return (
+            <div key={shakes} className="flex items-baseline gap-3">
+              <span className="text-sm font-medium text-amber-500 w-16 shrink-0 text-right">
+                {shakes}
+              </span>
+              {combos.length === 0 ? (
+                <span className="text-xs text-gray-600 italic">
+                  Not possible
+                </span>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {combos.map((combo, i) => (
+                    <span
+                      key={i}
+                      className="font-mono text-xs bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded"
+                    >
+                      {formatCombination(combo)}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function Results({
   remaining,
@@ -12,6 +63,7 @@ export function Results({
   solved: boolean;
 }) {
   const [showDetails, setShowDetails] = useState(false);
+  const [selectedCombo, setSelectedCombo] = useState<Combination | null>(null);
 
   const breakdown = useMemo(
     () =>
@@ -21,7 +73,18 @@ export function Results({
     [suggested, remaining]
   );
 
+  const selectedBreakdown = useMemo(
+    () =>
+      selectedCombo && remaining.length > 1
+        ? shakeBreakdown(selectedCombo, remaining)
+        : null,
+    [selectedCombo, remaining]
+  );
+
   if (solved) return null;
+
+  const showRemainingList =
+    remaining.length > 1 && remaining.length < 81;
 
   return (
     <div className="space-y-4">
@@ -50,42 +113,7 @@ export function Results({
 
           {showDetails && (
             <div className="mt-3">
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-xs font-medium text-gray-500 w-16 shrink-0 text-right">
-                  # shakes
-                </span>
-                <span className="text-xs font-medium text-gray-500">
-                  Remaining combinations
-                </span>
-              </div>
-              <div className="space-y-3">
-                {[0, 1, 2, 3, 4].map((shakes) => {
-                  const combos = breakdown[shakes]!;
-                  return (
-                    <div key={shakes} className="flex items-baseline gap-3">
-                      <span className="text-sm font-medium text-amber-500 w-16 shrink-0 text-right">
-                        {shakes}
-                      </span>
-                      {combos.length === 0 ? (
-                        <span className="text-xs text-gray-600 italic">
-                          Not possible
-                        </span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {combos.map((combo, i) => (
-                            <span
-                              key={i}
-                              className="font-mono text-xs bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded"
-                            >
-                              {formatCombination(combo)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <ShakeBreakdownTable breakdown={breakdown} />
             </div>
           )}
         </div>
@@ -108,14 +136,46 @@ export function Results({
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {remaining.map((combo, i) => (
-              <span
-                key={i}
-                className="font-mono text-sm bg-gray-800 text-gray-300 px-2 py-1 rounded"
+            {remaining.map((combo, i) => {
+              const isSelected =
+                selectedCombo !== null &&
+                combinationsEqual(combo, selectedCombo);
+              return (
+                <button
+                  key={i}
+                  onClick={() =>
+                    setSelectedCombo(isSelected ? null : combo)
+                  }
+                  className={`font-mono text-sm px-2 py-1 rounded cursor-pointer transition-colors ${
+                    isSelected
+                      ? "bg-teal-900 text-teal-300 ring-1 ring-teal-500"
+                      : "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-gray-100"
+                  }`}
+                >
+                  {formatCombination(combo)}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {selectedCombo && selectedBreakdown && showRemainingList && (
+          <div className="mt-4 pt-4 border-t border-gray-800">
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="text-sm text-gray-400">
+                If you guess{" "}
+                <span className="font-mono text-teal-400">
+                  {formatCombination(selectedCombo)}
+                </span>
+              </p>
+              <button
+                onClick={() => setSelectedCombo(null)}
+                className="text-xs font-bold text-gray-400 hover:text-gray-300 cursor-pointer transition-colors"
               >
-                {formatCombination(combo)}
-              </span>
-            ))}
+                Clear
+              </button>
+            </div>
+            <ShakeBreakdownTable breakdown={selectedBreakdown} />
           </div>
         )}
       </div>

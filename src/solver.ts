@@ -46,7 +46,7 @@ function worstCaseScore(candidate: Combination, remaining: Combination[]): numbe
 }
 
 /** Check if two combinations are equal. */
-function combinationsEqual(a: Combination, b: Combination): boolean {
+export function combinationsEqual(a: Combination, b: Combination): boolean {
   return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
 }
 
