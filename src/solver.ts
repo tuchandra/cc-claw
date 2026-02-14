@@ -88,6 +88,22 @@ export function parseCombination(s: string): Combination | null {
   return digits as unknown as Combination;
 }
 
+/**
+ * For a candidate guess against remaining possibilities, group the remaining
+ * combinations by how many shakes they'd produce.
+ * Returns an array of length 5 (index = shake count, value = matching combinations).
+ */
+export function shakeBreakdown(
+  candidate: Combination,
+  remaining: Combination[]
+): Combination[][] {
+  const buckets: Combination[][] = [[], [], [], [], []];
+  for (const combo of remaining) {
+    buckets[countMatches(candidate, combo)]!.push(combo);
+  }
+  return buckets;
+}
+
 /** Format a combination as a display string like "1-1-3-2". */
 export function formatCombination(c: Combination): string {
   return c.join("-");
