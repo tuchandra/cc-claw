@@ -28,6 +28,8 @@ jobs:
 
       - run: bun install
 
+      - run: bun test
+
       - run: bun run build
 
       - uses: actions/configure-pages@v5
