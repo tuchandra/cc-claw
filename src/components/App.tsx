@@ -14,6 +14,7 @@ const ALL = allCombinations();
 
 export function App() {
   const [guesses, setGuesses] = useState<Guess[]>([]);
+  const [resetKey, setResetKey] = useState(0);
 
   const remaining = useMemo(
     () => filterCombinations(ALL, guesses),
@@ -35,14 +36,16 @@ export function App() {
 
   function reset() {
     setGuesses([]);
+    setResetKey((k) => k + 1);
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-teal-400">Claw Code Solver</h1>
+        <h1 className="text-3xl font-bold text-teal-400">CC Claw</h1>
         <p className="text-gray-400 mt-1">
-          Enter your guesses and shake counts to find the secret combination.
+          Enter your guesses for <em>Claw. Grab. Prize!</em> to find the secret
+          combination.
         </p>
       </header>
 
@@ -86,7 +89,7 @@ export function App() {
           </div>
         </div>
       ) : (
-        <GuessInput onSubmit={addGuess} suggested={suggested} />
+        <GuessInput onSubmit={addGuess} suggested={suggested} resetKey={resetKey} />
       )}
 
       <Results remaining={remaining} suggested={suggested} solved={solved} />

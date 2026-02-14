@@ -1,18 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Column, Combination } from "../solver.ts";
 import { formatCombination } from "../solver.ts";
 
 const COLUMNS: Column[] = [1, 2, 3];
+const CONTROL_LABELS = ["Control 1", "Control 2", "Control 3", "Control 4"];
+const DEFAULT: Combination = [1, 1, 1, 1];
 
 export function GuessInput({
   onSubmit,
   suggested,
+  resetKey,
 }: {
   onSubmit: (combination: Combination, shakes: number) => void;
   suggested: Combination | null;
+  resetKey: number;
 }) {
-  const [controls, setControls] = useState<Combination>([1, 1, 1, 1]);
+  const [controls, setControls] = useState<Combination>(DEFAULT);
   const [shakes, setShakes] = useState<number>(0);
+
+  useEffect(() => {
+    setControls(DEFAULT);
+    setShakes(0);
+  }, [resetKey]);
 
   function setControl(index: number, value: Column) {
     setControls((prev) => {
@@ -34,14 +43,16 @@ export function GuessInput({
   return (
     <div className="rounded-lg bg-gray-900 border border-gray-800 p-5 mb-6">
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-400 mb-2">
+        <label className="block text-sm font-medium text-gray-400 mb-3">
           Controls
         </label>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <span className="text-xs text-gray-500">#{i + 1}</span>
-              <div className="flex flex-col gap-1">
+            <div key={i} className="flex items-center gap-3">
+              <span className="text-sm text-gray-500 w-20 shrink-0">
+                {CONTROL_LABELS[i]}
+              </span>
+              <div className="flex gap-1.5">
                 {COLUMNS.map((col) => (
                   <button
                     key={col}

@@ -39,7 +39,11 @@ export function Results({
           <p className="font-mono text-xl text-teal-300">
             {formatCombination(remaining[0]!)} — this must be the code!
           </p>
-        ) : remaining.length <= 20 ? (
+        ) : remaining.length === 81 ? (
+          <p className="text-gray-500 text-sm">
+            Anything is possible! Take a guess to get started.
+          </p>
+        ) : (
           <div className="flex flex-wrap gap-2">
             {remaining.map((combo, i) => (
               <span
@@ -50,10 +54,6 @@ export function Results({
               </span>
             ))}
           </div>
-        ) : (
-          <p className="text-gray-500 text-sm">
-            Too many to display. Keep guessing to narrow it down.
-          </p>
         )}
       </div>
     </div>
