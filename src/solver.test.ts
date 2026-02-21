@@ -5,8 +5,10 @@ import {
   countMatches,
   filterCombinations,
   bestGuess,
+  expectedValueScore,
   parseCombination,
   formatCombination,
+  combinationsEqual,
 } from "./solver.ts";
 
 /** Shorthand: parse "1132" into a Combination for test readability. */
@@ -170,5 +172,84 @@ describe("formatCombination", () => {
   test("formats with dashes", () => {
     expect(formatCombination(c("1132"))).toBe("1-1-3-2");
     expect(formatCombination(c("3333"))).toBe("3-3-3-3");
+  });
+});
+
+describe("expectedValueScore", () => {
+  test("perfect split scores low", () => {
+    // If a candidate splits 5 remaining into buckets of even sizes, score is sum of squares
+    const remaining: Combination[] = [c("1111"), c("1112"), c("1113"), c("1121"), c("1122")];
+    const score = expectedValueScore(remaining[0]!, remaining);
+    expect(score).toBeGreaterThan(0);
+  });
+
+  test("all in one bucket scores highest", () => {
+    // If all remaining have the same match count with candidate, everything lands in one bucket
+    // e.g. candidate "1111" vs remaining all having 0 matches → bucket[0] = N, score = N^2
+    const remaining: Combination[] = [c("2222"), c("2223"), c("2232"), c("2322"), c("3222")];
+    const allInOne = expectedValueScore(c("1111"), remaining);
+    // vs a candidate that spreads them out more
+    const spread = expectedValueScore(c("2222"), remaining);
+    expect(allInOne).toBeGreaterThan(spread);
+  });
+
+  test("score equals sum of squared bucket sizes", () => {
+    const remaining: Combination[] = [c("1111"), c("1112"), c("2222")];
+    // candidate "1111": matches with 1111=4, 1112=3, 2222=0 → buckets: [1,0,0,1,1] → 1+0+0+1+1=3
+    expect(expectedValueScore(c("1111"), remaining)).toBe(3);
+  });
+});
+
+describe("bestGuess with strategies", () => {
+  const narrowed = filterCombinations(allCombinations(), [
+    { combination: c("1111"), shakes: 1 },
+    { combination: c("2222"), shakes: 2 },
+  ]);
+
+  test("minimax returns a valid combination", () => {
+    const guess = bestGuess(narrowed, "minimax");
+    expect(guess).not.toBeNull();
+    expect(guess!.length).toBe(4);
+  });
+
+  test("remaining strategy only picks from remaining set", () => {
+    const guess = bestGuess(narrowed, "remaining");
+    expect(guess).not.toBeNull();
+    const inRemaining = narrowed.some((r) => combinationsEqual(r, guess!));
+    expect(inRemaining).toBe(true);
+  });
+
+  test("expected strategy returns a valid combination", () => {
+    const guess = bestGuess(narrowed, "expected");
+    expect(guess).not.toBeNull();
+    expect(guess!.length).toBe(4);
+  });
+
+  test("returns null for empty remaining regardless of strategy", () => {
+    expect(bestGuess([], "minimax")).toBeNull();
+    expect(bestGuess([], "remaining")).toBeNull();
+    expect(bestGuess([], "expected")).toBeNull();
+  });
+
+  test("returns the single combination regardless of strategy", () => {
+    expect(bestGuess([c("1132")], "minimax")).toEqual(c("1132"));
+    expect(bestGuess([c("1132")], "remaining")).toEqual(c("1132"));
+    expect(bestGuess([c("1132")], "expected")).toEqual(c("1132"));
+  });
+
+  test("strategies can produce different suggestions", () => {
+    // With a larger remaining set, strategies may diverge
+    const remaining = filterCombinations(allCombinations(), [
+      { combination: c("1111"), shakes: 1 },
+    ]);
+    const minimax = bestGuess(remaining, "minimax");
+    const remainingOnly = bestGuess(remaining, "remaining");
+    const expected = bestGuess(remaining, "expected");
+    // All should be valid
+    expect(minimax).not.toBeNull();
+    expect(remainingOnly).not.toBeNull();
+    expect(expected).not.toBeNull();
+    // remaining-only must be in the remaining set
+    expect(remaining.some((r) => combinationsEqual(r, remainingOnly!))).toBe(true);
   });
 });

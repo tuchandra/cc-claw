@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import type { Combination, Guess } from "../solver.ts";
+import type { Combination, Guess, Strategy } from "../solver.ts";
 import {
   allCombinations,
   filterCombinations,
   bestGuess,
   formatCombination,
+  STRATEGIES,
 } from "../solver.ts";
 import { GuessInput } from "./GuessInput.tsx";
 import { GuessHistory } from "./GuessHistory.tsx";
@@ -15,13 +16,14 @@ const ALL = allCombinations();
 export function App() {
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [resetKey, setResetKey] = useState(0);
+  const [strategy, setStrategy] = useState<Strategy>("minimax");
 
   const remaining = useMemo(
     () => filterCombinations(ALL, guesses),
     [guesses]
   );
 
-  const suggested = useMemo(() => bestGuess(remaining), [remaining]);
+  const suggested = useMemo(() => bestGuess(remaining, strategy), [remaining, strategy]);
 
   const solved = guesses.some((g) => g.shakes === 4);
   const impossible = remaining.length === 0 && !solved;
@@ -47,6 +49,24 @@ export function App() {
           Enter your guesses for <em>Claw. Grab. Prize!</em> to find the secret
           combination.
         </p>
+        <div className="flex gap-2 mt-3">
+          {(Object.entries(STRATEGIES) as [Strategy, { label: string; description: string }][]).map(
+            ([key, { label, description }]) => (
+              <button
+                key={key}
+                onClick={() => setStrategy(key)}
+                title={description}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors cursor-pointer ${
+                  strategy === key
+                    ? "bg-teal-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+                }`}
+              >
+                {label}
+              </button>
+            )
+          )}
+        </div>
       </header>
 
       {solved ? (
@@ -92,7 +112,7 @@ export function App() {
         <GuessInput onSubmit={addGuess} suggested={suggested} resetKey={resetKey} />
       )}
 
-      <Results remaining={remaining} suggested={suggested} solved={solved} />
+      <Results remaining={remaining} suggested={suggested} solved={solved} strategy={strategy} />
 
       {guesses.length > 0 && (
         <>

@@ -1,6 +1,22 @@
 export type Column = 1 | 2 | 3;
 export type Combination = [Column, Column, Column, Column];
 export type Guess = { combination: Combination; shakes: number };
+export type Strategy = "minimax" | "remaining" | "expected";
+
+export const STRATEGIES: Record<Strategy, { label: string; description: string }> = {
+  minimax: {
+    label: "Minimax",
+    description: "Minimizes the worst-case remaining possibilities",
+  },
+  remaining: {
+    label: "Remaining only",
+    description: "Best guess from remaining possibilities only",
+  },
+  expected: {
+    label: "Expected value",
+    description: "Minimizes the average remaining possibilities",
+  },
+};
 
 const COLUMNS: Column[] = [1, 2, 3];
 
@@ -45,26 +61,42 @@ function worstCaseScore(candidate: Combination, remaining: Combination[]): numbe
   return Math.max(...buckets);
 }
 
+/**
+ * Score a candidate by expected remaining possibilities.
+ * Returns sum(bucket_i^2) — lower means better average-case elimination.
+ */
+export function expectedValueScore(candidate: Combination, remaining: Combination[]): number {
+  const buckets = [0, 0, 0, 0, 0];
+  for (const combo of remaining) {
+    buckets[countMatches(candidate, combo)]!++;
+  }
+  let sum = 0;
+  for (const b of buckets) sum += b * b;
+  return sum;
+}
+
 /** Check if two combinations are equal. */
 export function combinationsEqual(a: Combination, b: Combination): boolean {
   return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
 }
 
 /**
- * Find the best next guess from all 81 combinations.
+ * Find the best next guess using the given strategy.
  * Prefers guesses that are in the remaining set (could win outright).
  */
-export function bestGuess(remaining: Combination[]): Combination | null {
+export function bestGuess(remaining: Combination[], strategy: Strategy = "minimax"): Combination | null {
   if (remaining.length === 0) return null;
   if (remaining.length === 1) return remaining[0]!;
 
-  const candidates = allCombinations();
+  const candidates = strategy === "remaining" ? remaining : allCombinations();
+  const scoreFn = strategy === "expected" ? expectedValueScore : worstCaseScore;
+
   let bestScore = Infinity;
   let best: Combination | null = null;
   let bestInRemaining = false;
 
   for (const candidate of candidates) {
-    const score = worstCaseScore(candidate, remaining);
+    const score = scoreFn(candidate, remaining);
     const inRemaining = remaining.some((r) => combinationsEqual(r, candidate));
 
     if (

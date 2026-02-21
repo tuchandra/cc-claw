@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import type { Combination } from "../solver.ts";
+import type { Combination, Strategy } from "../solver.ts";
 import {
   combinationsEqual,
   formatCombination,
   shakeBreakdown,
+  STRATEGIES,
 } from "../solver.ts";
 
 function ShakeBreakdownTable({
@@ -57,10 +58,12 @@ export function Results({
   remaining,
   suggested,
   solved,
+  strategy,
 }: {
   remaining: Combination[];
   suggested: Combination | null;
   solved: boolean;
+  strategy: Strategy;
 }) {
   const [showDetails, setShowDetails] = useState(false);
   const [selectedCombo, setSelectedCombo] = useState<Combination | null>(null);
@@ -98,7 +101,7 @@ export function Results({
           </p>
           <div className="flex items-baseline justify-between mt-1">
             <p className="text-xs text-gray-500">
-              Minimax strategy — minimizes the worst-case remaining possibilities
+              {STRATEGIES[strategy].label} — {STRATEGIES[strategy].description.toLowerCase()}
             </p>
             <button
               onClick={() => setShowDetails((v) => !v)}
